@@ -1,0 +1,288 @@
+******************************************************
+*Heading
+Voltage-induced bending study
+**
+**	UNITS:	SI
+************************************************************************
+**			PARAMETERS
+************************************************************************
+*Node
+1405, 0.0,       0.0
+1755, 0.02, 0.0
+22815, 0.02, 0.0003
+22465, 0.0,       0.0003
+**
+11935, 0.0,       0.00015
+12285, 0.02, 0.00015
+**
+1, 0.0,       -7.5e-06
+351, 0.02, -7.5e-06
+**
+24219, 0.02, 0.0003075
+23869, 0.0,       0.0003075
+**
+*Nset, nset=n1
+1405
+*Nset, nset=n2
+1755
+*Nset, nset=n3
+22815
+*Nset, nset=n4
+22465
+**
+*Nset, nset=n01
+11935
+*Nset, nset=n02
+12285
+**
+*Nset, nset=n11
+1
+*Nset, nset=n12
+351
+*Nset, nset=n13
+24219
+*Nset, nset=n14
+23869
+**
+** Generating the node geometry :
+**
+*Nfill, bias=1.0, nset=bottom
+n1, n2, 350
+**
+*Nfill, bias=1.0, nset=middle
+n01, n02, 350
+**
+*Nfill, bias=1.0, nset=top
+n4, n3, 350
+**
+*Nfill, bias=1.0, nset=ElecTop
+n14, n13, 350
+**
+*Nfill, bias=1.0, nset=ElecBtm
+n11, n12, 350
+**
+*Nfill, bias=0.884955752212, nset=nall1
+bottom, middle, 30, 351
+**
+*Nfill, bias=1.13, nset=nall2
+middle, top, 30, 351
+**
+*nset, nset=nall
+nall1, nall2
+**
+*Nfill, nset=nElectrodeTop
+top, ElecTop, 4, 351
+**
+*Nfill, nset=nElectrodeBtm
+ElecBtm, bottom, 4, 351
+**
+*Nset, nset=right, generate
+351, 24219, 351
+**
+*Surface, type=node, name=right_surf
+right
+**
+*Nset, nset=left, generate
+1, 23869, 351
+**
+*Surface, type=node, name=left_surf
+left
+**
+** Declare user element
+*User Element,Nodes=4,Type=U1,Iproperties=2,Properties=13,Coordinates=2,Variables=8,Unsymm
+1,2,11,12
+**
+** "Master Element" for *Elgen
+*element, type=U1
+1401, 1405, 1406, 1757, 1756
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_real
+1401, 350, 1, 1, 60, 351, 350
+**
+** "Master Element" for *Elgen
+*element, type=CPE4H
+101401, 1405, 1406, 1757, 1756
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_dummy
+101401, 350, 1, 1, 60, 351, 350
+**
+** "Master Element" for *Elgen
+*element, type=CPE4
+122401, 22465, 22466, 22817, 22816
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_ElecTop
+122401, 350, 1, 1, 4, 351, 350
+**
+** "Master Element" for *Elgen
+*element, type=CPE4
+1, 1, 2, 353, 352
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_ElecBtm
+1, 350, 1, 1, 4, 351, 350
+**
+*Node, nset=ref_node
+50005,0.5e-3,1.0e-3
+**
+************************************************************************
+**			MATERIAL DEFINITION
+************************************************************************
+**
+** Material properties for the real mesh
+**
+*uel property,elset=el_real
+**Eyoung, anu,     Omega,       theta,   mu0,       D,    z_mob,    c_st
+	78000000.0, 0.3, 0.000104, 298, 0,  1.3e-11,     1,  10000.0
+** cbar0,       permitt,     cbar_bound, z_bound,  permitt_real,      nlSdv,      ngSdv
+    0.15,    0.010625025384,    0.15,    -1.,    1.0625025384e-09,    2,    19
+**
+** Dummy mesh material properties
+**
+*Solid section, elset=el_dummy, material=umaterial
+**
+*Material, name=umaterial
+**
+*Elastic
+1e-20, 0.3
+**
+** *user material, constant=0
+** **
+** *Depvar
+** 19
+** 1, cbar
+** 2, T11
+** 3, T22
+** 4, T12
+** 5, T33
+** 6, Tes11
+** 7, Tes22
+** 8, Tes12
+** 9, Tes33
+** 10, Tme11
+** 11, Tme22
+** 12, Tme12
+** 13, Tme33
+** 14, e1
+** 15, e2
+** 16, j1
+** 17, j2
+** 18, pbar
+** 19, Js
+**
+**
+*Density
+1.0
+**
+*Specific heat
+1.0
+**
+** Electrode material properties
+**
+*Solid section, elset=el_ElecTop, material=Electrode
+**
+*Solid section, elset=el_ElecBtm, material=Electrode
+**
+*Material, name=Electrode
+**
+*Elastic
+78e6, 0.3
+**
+*Density
+1.0
+**
+*Specific heat
+1.0
+**
+************************************************************************
+**			BOUNDARY CONDITIONS
+************************************************************************
+** *EQUATION
+** 2
+** right,2,-1.0
+** ref_node,2,1.0
+** 2
+** right,1,-1.0
+** ref_node,1,1.0
+**
+************************************************************************
+**			INITIAL CONDITIONS
+************************************************************************
+**
+*Initial conditions, type=temperature
+nall, 0.,  -4700.25135519
+************************************************************************
+**			AMPLITUDE DEFINITION
+************************************************************************
+**
+*Amplitude, name=amp_1
+0.,-4700.25135519, 100, -9400.50271039
+*Amplitude, name=amp_2, definition=smooth step
+0.,0., 0.001, 1., 100, 1.
+*Amplitude, name=amp_3, definition=smooth step
+0.    ,  0., 0.001,  1., 10.000, 1., 10.002, -1., 
+20.000, -1., 20.001, 0., 40.000, 0.,
+*Amplitude, name=1Hz_sine, definition=periodic
+1, 6.283185, ,
+0., 1
+**
+**
+************************************************************************
+**			STEP DEFINITION
+************************************************************************
+*Step, Name=Deform, nlgeom=yes, inc=50000
+*Coupled temperature-displacement, deltmx=10000
+1e-05,60,1e-15,0
+*CONTROLS, PARAMETERS=TIME INCREMENTATION
+,,,,,,,12,,,,,,
+**
+** 	DISPLACEMENT B.C.
+**
+** *Boundary, type=velocity
+** bottom,2,2
+** n1, 1,2
+** ref_node,2,2,2e-06
+** *boundary
+** nall, 11,11,0
+** nall, 12,12,-4700.25135519
+**
+** 	ELECTRICAL/CHEMICAL B.C.
+**
+*Boundary
+left,1,2
+**ref_node,2,2
+**n02,2,2
+*Boundary, amplitude=1Hz_sine
+bottom,11,11,0
+top,11,11,3.0
+** *Boundary, amplitude=1Hz_sine
+** ref_node, 2,2, 0.001
+**
+**
+**	OUTPUTS
+**
+*Output, field, frequency=5
+*node output, nset=nall
+u,nt
+*node output, nset=nElectrodeTop
+u
+*node output, nset=nElectrodeBtm
+u
+*Element output, elset=el_dummy
+le,SDV
+*Element output, elset=el_ElecBtm
+le,S
+*Element output, elset=el_ElecTop
+le,S
+**
+*Output, history
+*Node output, nset=n02
+u1, u2, rf2
+***Node output, nset=ref_node
+**rf2
+*node output, nset=n4
+nt11
+*End Step
+************************************************************************
