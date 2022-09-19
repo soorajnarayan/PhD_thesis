@@ -1,0 +1,456 @@
+******************************************************
+*Heading
+Voltage-induced bending study
+**
+**	UNITS:	SI
+************************************************************************
+**			PARAMETERS
+************************************************************************
+*Parameter
+**
+** total simulation time (seconds)
+tload = 30
+**
+** Total strain
+eps = 0.2
+** 
+** Strain rate
+epsdot = eps/tload
+** 
+** Velocity
+vel2 = epsdot*1e-3
+**
+** inital time step
+ti = tload/1e7
+** 
+** max time step
+tmax = tload/500
+**
+** min time step
+tmin = 1e-15
+**
+*******************************
+Eyoung = 78.e6
+anu = 0.3
+*******************************
+mu0 = 0
+**
+c_st = 10000.
+**
+c_init = 1500.
+**
+cbar0 = c_init/c_st
+**
+Rgas = 8.314
+vartheta = 298
+omg_init = mu0 + Rgas*vartheta*log(cbar0)
+**
+omg_f = omg_init*2
+*********************
+z_val = 1
+Farad = 96485.
+********************
+**
+permitt0 = 8.85418782e-12
+permitt_r = 120
+permitt_num = 1e7
+**
+permitt_real = permitt0*permitt_r
+permitt  = permitt0*permitt_r*permitt_num
+**
+Omega = 10.4e-5
+**21.e-5
+D = 1.3e-11
+********************
+** Integer parameters
+nlSdv = 2
+ngSdv = 19
+nInt = 4
+nvars = nlSdv*nInt
+**
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+** 			INPUTS
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**
+** major dimensions of plate (m)
+xlength = 20.e-3
+**
+ylength = 300e-6
+**
+** number of elements along each direction
+xElem = 300
+yElem = 120
+**
+** Bias parameter for y-elements (for boundary layers)
+bias = 1.07
+biasInv = 1.00/bias
+**
+** Bias for x-direction elements (to resolve root bending)
+xBias = 1.00
+**
+** proportional width of electrode surfaces (elastic)
+Lelectrode = 7.5e-6
+**
+mLelectrode = -Lelectrode
+**
+** number of elements for electrode thickness
+elemElectrode = 4
+**
+yElec = Lelectrode+ylength
+**
+** first element number for upper electrode
+ElIndElec = xElem*yElem + elemElectrode*xElem + 1 + 100000
+**
+** New first element number for UEL/UMAT
+ElIndPolUel  = elemElectrode*xElem + 1
+ElIndPolUmat = elemElectrode*xElem + 1 + 100000
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+** 			GEOMETRY GENERATION
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**
+** Half parameters for middle
+yHalf = ylength/2
+yElemHalf = yElem/2
+**
+** Number of nodes in each direction
+xNode = xElem + 1
+yNode = yElem + 1
+**
+** Note the definition of the vertices:
+** !   14---------13
+** !   |  elastic  |
+** !   4-----------3          | y
+** !   |           |          |
+** !   |           |          |
+** !   01   UEL   02          |
+** !   |           |          |
+** !   |           |          O--------- x
+** !   1-----------2        origin at (1)
+** !   |  elastic  |
+** !   11---------12
+**
+** Make node numbers for the vertices
+n11 = 1
+n12 = xElem + n11
+**
+n1 = 1 + xNode*elemElectrode
+n2 = xElem + n1
+n4 = xNode*yElem + n1
+n3 = n4 + xElem
+**
+n01 = n1 + xNode*(yElem/2) 
+n02 = n01 + xElem
+**
+n14 = n4 + xNode*elemElectrode
+n13 = n3 + xNode*elemElectrode
+**
+** Node indices for master element, bulk
+n1m = n1
+n2m = n1 + 1
+n3m = xNode + n1 + 1
+n4m = xNode + n1
+**
+** Node indices for master element, upper electrode
+n1m_ue = n4
+n2m_ue = n4 + 1
+n3m_ue = xNode + n4 + 1
+n4m_ue = xNode + n4
+**
+** Node indices for master element, lower electrode
+n1m_le = 1
+n2m_le = 1 + 1
+n3m_le = xNode + 1 + 1
+n4m_le = xNode + 1
+**
+** Nodes at the vertices:
+*Node
+<n1>, 0.0,       0.0
+<n2>, <xlength>, 0.0
+<n3>, <xlength>, <ylength>
+<n4>, 0.0,       <ylength>
+**
+<n01>, 0.0,       <yHalf>
+<n02>, <xlength>, <yHalf>
+**
+<n11>, 0.0,       <mLelectrode>
+<n12>, <xlength>, <mLelectrode>
+**
+<n13>, <xlength>, <yElec>
+<n14>, 0.0,       <yElec>
+**
+*Nset, nset=n1
+<n1>
+*Nset, nset=n2
+<n2>
+*Nset, nset=n3
+<n3>
+*Nset, nset=n4
+<n4>
+**
+*Nset, nset=n01
+<n01>
+*Nset, nset=n02
+<n02>
+**
+*Nset, nset=n11
+<n11>
+*Nset, nset=n12
+<n12>
+*Nset, nset=n13
+<n13>
+*Nset, nset=n14
+<n14>
+**
+** Generating the node geometry :
+**
+*Nfill, bias=<xBias>, nset=bottom
+n1, n2, <xElem>
+**
+*Nfill, bias=<xBias>, nset=middle
+n01, n02, <xElem>
+**
+*Nfill, bias=<xBias>, nset=top
+n4, n3, <xElem>
+**
+*Nfill, bias=<xBias>, nset=ElecTop
+n14, n13, <xElem>
+**
+*Nfill, bias=<xBias>, nset=ElecBtm
+n11, n12, <xElem>
+**
+*Nfill, bias=<biasInv>, nset=nall1
+bottom, middle, <yElemHalf>, <xNode>
+**
+*Nfill, bias=<bias>, nset=nall2
+middle, top, <yElemHalf>, <xNode>
+**
+*nset, nset=nall
+nall1, nall2
+**
+*Nfill, nset=nElectrodeTop
+top, ElecTop, <elemElectrode>, <xNode>
+**
+*Nfill, nset=nElectrodeBtm
+ElecBtm, bottom, <elemElectrode>, <xNode>
+**
+*Nset, nset=right, generate
+<n12>, <n13>, <xNode>
+**
+*Surface, type=node, name=right_surf
+right
+**
+*Nset, nset=left, generate
+<n11>, <n14>, <xNode>
+**
+*Surface, type=node, name=left_surf
+left
+**
+** Declare user element
+*User Element,Nodes=4,Type=U1,Iproperties=2,Properties=13,Coordinates=2,Variables=<nvars>,Unsymm
+1,2,11,12
+**
+** "Master Element" for *Elgen
+*element, type=U1
+<ElIndPolUel>, <n1m>, <n2m>, <n3m>, <n4m>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_real
+<ElIndPolUel>, <xElem>, 1, 1, <yElem>, <xNode>, <xElem>
+**
+** "Master Element" for *Elgen
+*element, type=CPE4R
+<ElIndPolUmat>, <n1m>, <n2m>, <n3m>, <n4m>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_dummy
+<ElIndPolUmat>, <xElem>, 1, 1, <yElem>, <xNode>, <xElem>
+**
+** "Master Element" for *Elgen
+*element, type=CPE4R
+<ElIndElec>, <n1m_ue>, <n2m_ue>, <n3m_ue>, <n4m_ue>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_ElecTop
+<ElIndElec>, <xElem>, 1, 1, <elemElectrode>, <xNode>, <xElem>
+**
+** "Master Element" for *Elgen
+*element, type=CPE4R
+1, <n1m_le>, <n2m_le>, <n3m_le>, <n4m_le>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_ElecBtm
+1, <xElem>, 1, 1, <elemElectrode>, <xNode>, <xElem>
+**
+*Node, nset=ref_node
+50005,0.5e-3,1.0e-3
+**
+************************************************************************
+**			MATERIAL DEFINITION
+************************************************************************
+**
+** Material properties for the real mesh
+**
+*uel property,elset=el_real
+**Eyoung, anu,     Omega,       theta,   mu0,       D,    z_mob,    c_st
+	<Eyoung>, <anu>,   <Omega>, <vartheta>, <mu0>,  <D>,     <z_val>,  <c_st>
+** cbar0,       permitt,        cbar_bound,z_bound, permitt_real, nlSdv, ngSdv
+    <cbar0>,    <permitt>,         <cbar0>,    -1., <permitt_real>,    <nlSdv>,    <ngSdv>
+**
+** Dummy mesh material properties
+**
+*Solid section, elset=el_dummy, material=umaterial
+***Hourglass Stiffness
+**80.e-20
+**
+*Material, name=umaterial
+**
+*Elastic
+1e-20, 0.3
+*User output variables
+19
+**
+** *user material, constant=0
+** **
+** *Depvar
+** 19
+** 1, cbar
+** 2, T11
+** 3, T22
+** 4, T12
+** 5, T33
+** 6, Tes11
+** 7, Tes22
+** 8, Tes12
+** 9, Tes33
+** 10, Tme11
+** 11, Tme22
+** 12, Tme12
+** 13, Tme33
+** 14, e1
+** 15, e2
+** 16, j1
+** 17, j2
+** 18, pbar
+** 19, Js
+**
+**
+*Density
+1.0
+**
+*Specific heat
+1.0
+**
+** Electrode material properties
+**
+*Solid section, elset=el_ElecTop, material=Electrode
+***Hourglass Stiffness
+**80.e8
+**
+*Solid section, elset=el_ElecBtm, material=Electrode
+***Hourglass Stiffness
+**80.e8
+**
+*Material, name=Electrode
+**
+*Elastic
+78.e6, 0.3
+**
+*Density
+1.0
+**
+*Specific heat
+1.0
+**
+************************************************************************
+**			BOUNDARY CONDITIONS
+************************************************************************
+** *EQUATION
+** 2
+** right,2,-1.0
+** ref_node,2,1.0
+** 2
+** right,1,-1.0
+** ref_node,1,1.0
+**
+************************************************************************
+**			INITIAL CONDITIONS
+************************************************************************
+**
+*Initial conditions, type=temperature
+nall, 0.,  <omg_init>
+************************************************************************
+**			AMPLITUDE DEFINITION
+************************************************************************
+**
+*Amplitude, name=amp_1
+0.,<omg_init>, <tload>, <omg_f>
+*Amplitude, name=amp_2, definition=smooth step
+0.,0., 0.001, 1., <tload>, 1.
+*Amplitude, name=amp_3, definition=smooth step
+0.    ,  0., 0.001,  1., 10.000, 1., 10.002, -1., 
+20.000, -1., 20.001, 0., 40.000, 0.,
+*Amplitude, name=1Hz_sine, definition=periodic
+1, 6.283185, ,
+0., 1
+**
+**
+************************************************************************
+**			STEP DEFINITION
+************************************************************************
+*Step, Name=Deform, nlgeom=yes, inc=50000
+*Coupled temperature-displacement, deltmx=1000, stabilize,factor=0.03
+<ti>,60.,<tmin>,<tmax>
+*CONTROLS, PARAMETERS=TIME INCREMENTATION
+,,,,,,,12,,,,,,
+***Solution technique, type=separated
+*CONTROLS, PARAMETERS=LINE SEARCH
+10,1.0,0.0001,0.25,0.10
+**
+** 	DISPLACEMENT B.C.
+**
+** *Boundary, type=velocity
+** bottom,2,2
+** n1, 1,2
+** ref_node,2,2,<vel2>
+** *boundary
+** nall, 11,11,0
+** nall, 12,12,<omg_init>
+**
+** 	ELECTRICAL/CHEMICAL B.C.
+**
+*Boundary
+left,1,2
+**ref_node,2,2
+**n02,2,2
+*Boundary, amplitude=amp_2
+bottom,11,11,0
+top,11,11,3.0
+** *Boundary, amplitude=1Hz_sine
+** ref_node, 2,2, 0.001
+**
+**
+**	OUTPUTS
+**
+*Output, field, frequency=5
+*node output, nset=nall
+u,nt
+*node output, nset=nElectrodeTop
+u
+*node output, nset=nElectrodeBtm
+u
+*Element output, elset=el_dummy
+le,UVARM
+*Element output, elset=el_ElecBtm
+le,S
+*Element output, elset=el_ElecTop
+le,S
+**
+*Output, history
+*Node output, nset=n02
+u1, u2, rf2
+***Node output, nset=ref_node
+**rf2
+*node output, nset=n4
+nt11
+*End Step
+************************************************************************
