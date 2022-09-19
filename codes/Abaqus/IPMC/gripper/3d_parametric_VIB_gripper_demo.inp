@@ -1,0 +1,783 @@
+******************************************************
+*Heading
+Voltage-induced bending study
+**
+**	UNITS:	SI
+************************************************************************
+**			PARAMETERS
+************************************************************************
+*Parameter
+**
+** total simulation time (seconds)
+tload = 30
+**
+** Total strain
+eps = 0.2
+** 
+** Strain rate
+epsdot = eps/tload
+** 
+** Velocity
+vel2 = epsdot*1e-3
+**
+** inital time step
+ti = tload/1e7
+** 
+** max time step
+tmax = tload/500
+**
+** min time step
+tmin = 1e-15
+**
+*******************************
+Eyoung = 78.e6
+anu = 0.3
+*******************************
+mu0 = 0
+**
+c_st = 10000.
+**
+c_init = 1500.
+**
+cbar0 = c_init/c_st
+**
+Rgas = 8.314
+vartheta = 298
+omg_init = mu0 + Rgas*vartheta*log(cbar0)
+**
+omg_f = omg_init*2
+*********************
+z_val = 1
+Farad = 96485.
+********************
+**
+permitt0 = 8.85418782e-12
+permitt_r = 120
+permitt_num = 1e7
+**
+permitt_real = permitt0*permitt_r
+permitt  = permitt0*permitt_r*permitt_num
+**
+Omega = 10.4e-5
+D = 1.3e-11
+********************
+** Integer parameters
+nlSdv = 2
+ngSdv = 19
+nInt = 8
+nvars = nlSdv*nInt
+**
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+** 			INPUTS
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**
+** major dimensions of plate (m)
+** "width":
+xlength = 3e-3 
+**        
+** "thickness":
+ylength = 300e-6
+**         
+** "length":
+zlength = 20e-3
+**
+** number of elements along each direction 
+xElem = 3
+**
+yElem = 40
+**
+zElem = 80
+**
+** Bias parameter for y-elements (for boundary layers)
+bias = 1.10
+biasInv = 1.00/bias
+**
+** proportional width of electrode surfaces (elastic)
+Lelectrode = 7.5e-6
+**
+mLelectrode = -Lelectrode
+**
+** number of elements for electrode thickness
+elemElectrode = 4
+**
+yElec = Lelectrode+ylength
+**
+** first element number for upper electrode
+ElIndElec = xElem*(yElem+elemElectrode)*zElem + 1 + 2000000
+**
+** New first element number for UEL/UMAT
+ElIndPolUel  = elemElectrode*xElem*zElem + 1
+ElIndPolUmat = elemElectrode*xElem*zElem + 1 + 100000
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+** 			GEOMETRY GENERATION
+** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**
+** Half parameters for middle
+yHalf = ylength/2
+yElemHalf = yElem/2
+**
+** Number of nodes in each direction
+xNode = xElem + 1
+yNode = yElem + 1
+zNode = zElem + 1
+**
+** Other indices we'll need later
+faceElem = xElem*(yElem+ 2*elemElectrode)
+faceNode = xNode*(yNode+ 2*(elemElectrode+1))
+ElecFaceElem = xElem*elemElectrode
+ElecFaceNode = xNode*(elemElectrode+1)
+layerOffset = xNode*(yNode+2*(elemElectrode+1))*zElem
+**
+** Note the definition of the vertices:
+** !
+** !     18----------17
+** !     /|          /|
+** !    / 8---------/-7
+** !  14----------13 /|       y
+** !   |/  elastic |/ |       
+** !   4-----------3  |       |    -z
+** !   | 05        | 06       |   /
+** !   |  |  UEL   |  |       |  /
+** !   01 5-------02--6       | /
+** !   | /|        | /|       |/
+** !   |/15--------|/ 16      O--------- x
+** !   1-----------2 /       origin at (1)
+** !   |/ elastic  |/
+** !   11---------12
+**
+** Make node numbers for the vertices
+n11 = 1
+n12 = xElem + n11
+n15 = n11 + layerOffset
+n16 = n12 + layerOffset
+**
+n1 = 1 + xNode*elemElectrode
+n2 = xElem + n1
+n4 = xNode*yElem + n1
+n3 = n4 + xElem
+n5 = n1 + layerOffset
+n6 = n2 + layerOffset
+n7 = n3 + layerOffset
+n8 = n4 + layerOffset
+**
+n01 = n1 + xNode*(yElem/2) 
+n02 = n01 + xElem
+n05 = n01 + layerOffset
+n06 = n02 + layerOffset
+**
+n14 = n4 + xNode*elemElectrode
+n13 = n3 + xNode*elemElectrode
+n17 = n13 + layerOffset
+n18 = n14 + layerOffset
+**
+** Node indices for master element, bulk
+n1m = n1
+n2m = n1 + 1
+n3m = xNode + n1 + 1
+n4m = xNode + n1
+n5m = n1m + faceNode
+n6m = n2m + faceNode
+n7m = n3m + faceNode
+n8m = n4m + faceNode
+**
+** Node indices for master element, upper electrode
+n1m_ue = n4
+n2m_ue = n4 + 1
+n3m_ue = xNode + n4 + 1
+n4m_ue = xNode + n4
+n5m_ue = n1m_ue + faceNode
+n6m_ue = n2m_ue + faceNode
+n7m_ue = n3m_ue + faceNode
+n8m_ue = n4m_ue + faceNode
+**
+** Node indices for master element, lower electrode
+n1m_le = 1
+n2m_le = 1 + 1
+n3m_le = xNode + 1 + 1
+n4m_le = xNode + 1
+n5m_le = n1m_le + faceNode
+n6m_le = n2m_le + faceNode
+n7m_le = n3m_le + faceNode
+n8m_le = n4m_le + faceNode
+**
+*part, name=ipmc
+**
+** Nodes at the vertices:
+*Node
+<n1>, 0.0,       0.0,       0.0
+<n2>, <xlength>, 0.0,       0.0
+<n3>, <xlength>, <ylength>, 0.0
+<n4>, 0.0,       <ylength>, 0.0
+**
+<n01>, 0.0,       <yHalf>,0.0
+<n02>, <xlength>, <yHalf>,0.0
+**
+<n11>, 0.0,       <mLelectrode>, 0.0
+<n12>, <xlength>, <mLelectrode>, 0.0
+**
+<n13>, <xlength>, <yElec>, 0.0
+<n14>, 0.0,       <yElec>, 0.0
+**
+<n5>, 0.0,       0.0,       <zlength>
+<n6>, <xlength>, 0.0,       <zlength>
+<n7>, <xlength>, <ylength>, <zlength>
+<n8>, 0.0,       <ylength>, <zlength>
+**
+<n05>, 0.0,       <yHalf>, <zlength>
+<n06>, <xlength>, <yHalf>, <zlength>
+**
+<n15>, 0.0,       <mLelectrode>, <zlength>
+<n16>, <xlength>, <mLelectrode>, <zlength>
+**
+<n17>, <xlength>, <yElec>, <zlength>
+<n18>, 0.0,       <yElec>, <zlength>
+**
+*Nset, nset=n1
+<n1>
+*Nset, nset=n2
+<n2>
+*Nset, nset=n3
+<n3>
+*Nset, nset=n4
+<n4>
+**
+*Nset, nset=n01
+<n01>
+*Nset, nset=n02
+<n02>
+**
+*Nset, nset=n11
+<n11>
+*Nset, nset=n12
+<n12>
+*Nset, nset=n13
+<n13>
+*Nset, nset=n14
+<n14>
+**
+*Nset, nset=n5
+<n5>
+*Nset, nset=n6
+<n6>
+*Nset, nset=n7
+<n7>
+*Nset, nset=n8
+<n8>
+**
+*Nset, nset=n05
+<n05>
+*Nset, nset=n06
+<n06>
+**
+*Nset, nset=n15
+<n15>
+*Nset, nset=n16
+<n16>
+*Nset, nset=n17
+<n17>
+*Nset, nset=n18
+<n18>
+**
+** Generating the node geometry :
+**
+*Nfill, nset=bottomF
+n1, n2, <xElem>
+**
+*Nfill, nset=middleF
+n01, n02, <xElem>
+**
+*Nfill, nset=topF
+n4, n3, <xElem>
+**
+*Nfill, nset=ElecTopF
+n14, n13, <xElem>
+**
+*Nfill, nset=ElecBtmF
+n11, n12, <xElem>
+**
+*Nfill, bias=<biasInv>, nset=FrontBtm
+bottomF, middleF, <yElemHalf>, <xNode>
+**
+*Nfill, bias=<bias>, nset=FrontTop
+middleF, topF, <yElemHalf>, <xNode>
+**
+*nset, nset=front
+FrontBtm, FrontTop
+**
+*Nfill, nset=bottomB
+n5, n6, <xElem>
+**
+*Nfill, nset=middleB
+n05, n06, <xElem>
+**
+*Nfill, nset=topB
+n8, n7, <xElem>
+**
+*Nfill, nset=ElecTopB
+n18, n17, <xElem>
+**
+*Nfill, nset=ElecBtmB
+n15, n16, <xElem>
+**
+*Nfill, bias=<biasInv>, nset=BackBtm
+bottomB, middleB, <yElemHalf>, <xNode>
+**
+*Nfill, bias=<bias>, nset=BackTop
+middleB, topB, <yElemHalf>, <xNode>
+**
+*nset, nset=back
+BackBtm, BackTop
+**
+*Nfill, nset=nall
+front, back, <zElem>, <faceNode>
+**
+*Nfill, nset=top
+topF, topB, <zElem>, <faceNode>
+**
+*Nfill, nset=nElectrodeTopSurf
+ElecTopF, ElecTopB, <zElem>, <faceNode>
+**
+*Nfill, nset=nElectrodeTop
+top, nElectrodeTopSurf, <elemElectrode>, <xNode>
+**
+*Nfill, nset=bottom
+BottomF, BottomB, <zElem>, <faceNode>
+**
+*Nfill, nset=nElectrodeBtmSurf
+ElecBtmF, ElecBtmB, <zElem>, <faceNode>
+**
+*Nfill, nset=nElectrodeBtm
+nElectrodeBtmSurf, bottom, <elemElectrode>, <xNode>
+**
+*nset, nset=right
+front
+**
+*nset, nset=left
+back
+**
+** Declare user element
+*User Element,Nodes=8,Type=U1,Iproperties=2,Properties=13,Coordinates=3,Variables=<nvars>,Unsymm
+1,2,3,11,12
+**
+** "Master Element" for *Elgen
+*element, type=U1
+<ElIndPolUel>, <n1m>, <n2m>, <n3m>, <n4m>, <n5m>, <n6m>, <n7m>, <n8m>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_real
+<ElIndPolUel>, <xElem>, 1, 1, <yElem>, <xNode>, <xElem>, <zElem>, <faceNode>, <faceElem>
+**
+** "Master Element" for *Elgen
+*element, type=C3D8H
+<ElIndPolUmat>, <n1m>, <n2m>, <n3m>, <n4m>, <n5m>, <n6m>, <n7m>, <n8m>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_dummy
+<ElIndPolUmat>, <xElem>, 1, 1, <yElem>, <xNode>, <xElem>, <zElem>, <faceNode>, <faceElem> 
+**
+** ** "Master Element" for *Elgen
+*element, type=C3D8H
+<ElIndElec>, <n1m_ue>, <n2m_ue>, <n3m_ue>, <n4m_ue>, <n5m_ue>, <n6m_ue>, <n7m_ue>, <n8m_ue>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_ElecTop
+<ElIndElec>, <xElem>, 1, 1, <elemElectrode>, <xNode>, <xElem>, <zElem>, <faceNode>, <ElecFaceElem>
+**
+** "Master Element" for *Elgen
+*element, type=C3D8H
+1, <n1m_le>, <n2m_le>, <n3m_le>, <n4m_le>, <n5m_le>, <n6m_le>, <n7m_le>, <n8m_le>
+**
+** call to *elgen which meshes the plate geometry
+*elgen, elset=el_ElecBtm
+1, <xElem>, 1, 1, <elemElectrode>, <xNode>, <xElem>, <zElem>, <faceNode>, <ElecFaceElem>
+**
+*Node, nset=ref_node
+50005,0.5e-3,1.0e-3
+**
+*Surface, type=element, name=ElecTop_surf
+el_ElecTop
+**
+*Surface, type=element, name=ElecBtm_surf
+el_ElecBtm
+**
+*Solid section, elset=el_dummy, material=umaterial
+**
+*Solid section, elset=el_ElecTop, material=Electrode
+**
+*Solid section, elset=el_ElecBtm, material=Electrode
+**
+*End part
+************************************************************************
+**			ASSEMBLY DEFINITION
+************************************************************************
+**
+*Part, name=floor
+**
+**
+*Node, nset=floor_ref
+999999, 2.5225e-3, -19e-3,0
+**
+*End part
+**
+**
+Input file for solid pebble geometry
+*Include, input=hexPebbleGeom.inp
+**
+*Assembly, name=gripper
+**
+*Instance, NAME=ipmc-1, PART=ipmc
+** translation
+-1.5e-3,0,5e-3
+** rotation
+** 0,0,0, 1,-1e-3,0, 0
+*End Instance
+**
+*Instance, NAME=ipmc-2, PART=ipmc
+** translation
+0.0,2.9056e-3,5e-3
+** rotation
+1.5e-3,3.0e-3,0, 1.5e-3,3.0e-3,1, 120.0
+*End Instance
+**
+*Instance, NAME=ipmc-3, PART=ipmc
+** translation
+-3.0e-3,2.9056e-3,5e-3
+** rotation
+-1.5e-3,3.0e-3,0, -1.5e-3,3.0e-3,1, -120.0
+*End Instance
+**
+*Instance, name=floor-1, part=floor
+      0.0075,       0.0015,           -1.0e-3
+      0.0075,       0.0015,           -1.0e-3,       1.0075,       0.0015,           -1.0e-3,          90.
+*Surface, type=CYLINDER, name=Surf-1
+START,        -0.0125,           0.
+ LINE,        -0.0025,           0.
+*End Instance
+**  
+*Instance, name=floor-2, part=floor
+      0.0075,       0.0015,           -1.0e-3
+      0.0075,       0.0015,           -1.0e-3,       1.0075,       0.0015,           -1.0e-3,          90.
+*Surface, type=CYLINDER, name=Surf-1
+START,        0.0000,           0.
+ LINE,        0.0100,           0.
+*End Instance
+**
+*Instance, name=cap-1, part=cap
+          0.,     0.001775,        0.024
+*End Instance
+**
+*Node
+      999999, 0.00749999983, 0.00150000001,           0.
+*Nset, nset=_PickedSet8, internal
+ 999999,
+*Node
+      999998, 0.00749999983, 0.00150000001,           0.
+*Nset, nset=_PickedSet9, internal
+ 999998,
+**
+*Node, nset=cap_control
+      999997,           0., 0.00137499999, 0.0219999999
+*Nset, nset=_PickedSet14, internal
+ 999997,
+**
+** Constraint: Constraint-1
+*Rigid Body, ref node=_PickedSet8, analytical surface=Floor-1.Surf-1
+*Rigid Body, ref node=_PickedSet9, analytical surface=Floor-2.Surf-1
+*Rigid Body, ref node=_PickedSet14, elset=cap-1.CapSurf
+**
+*instance, name=pebble-1, part=pebble
+0, 0, -1.0e-3
+*End instance
+**
+**
+*End Assembly
+************************************************************************
+**			MATERIAL DEFINITION
+************************************************************************
+**
+** Material properties for the real mesh
+**
+*uel property,elset=ipmc-1.el_real
+**Eyoung, anu,     Omega,       theta,   mu0,       D,    z_mob,    c_st
+<Eyoung>, <anu>,   <Omega>, <vartheta>, <mu0>,  <D>,     <z_val>,  <c_st>
+** cbar0,       permitt,        cbar_bound,z_bound, permitt_real, nlSdv, ngSdv
+<cbar0>,    <permitt>,         <cbar0>,    -1., <permitt_real>,    <nlSdv>,    <ngSdv>
+**
+*uel property,elset=ipmc-2.el_real
+**Eyoung, anu,     Omega,       theta,   mu0,       D,    z_mob,    c_st
+<Eyoung>, <anu>,   <Omega>, <vartheta>, <mu0>,  <D>,     <z_val>,  <c_st>
+** cbar0,       permitt,        cbar_bound,z_bound, permitt_real, nlSdv, ngSdv
+<cbar0>,    <permitt>,         <cbar0>,    -1., <permitt_real>,    <nlSdv>,    <ngSdv>
+**
+*uel property,elset=ipmc-3.el_real
+**Eyoung, anu,     Omega,       theta,   mu0,       D,    z_mob,    c_st
+<Eyoung>, <anu>,   <Omega>, <vartheta>, <mu0>,  <D>,     <z_val>,  <c_st>
+** cbar0,       permitt,        cbar_bound,z_bound, permitt_real, nlSdv, ngSdv
+<cbar0>,    <permitt>,         <cbar0>,    -1., <permitt_real>,    <nlSdv>,    <ngSdv>
+**
+** Dummy mesh material properties
+**
+**
+*Material, name=umaterial
+**
+*Elastic
+1e-20, 0.3
+**
+***User output variables
+**<ngSdv>
+** *user material, constant=0
+** **
+** *Depvar
+** 19
+** 1, cbar
+** 2, T11
+** 3, T22
+** 4, T12
+** 5, T33
+** 6, Tes11
+** 7, Tes22
+** 8, Tes12
+** 9, Tes33
+** 10, Tme11
+** 11, Tme22
+** 12, Tme12
+** 13, Tme33
+** 14, e1
+** 15, e2
+** 16, j1
+** 17, j2
+** 18, pbar
+** 19, Js
+**
+**
+*Density
+1.0
+**
+*Specific heat
+1.0
+**
+** Electrode material properties
+**
+*Material, name=Electrode
+**
+*Elastic
+78e6, 0.3
+**
+*Density
+1.0
+**
+*Specific heat
+1.0
+**
+** pebble material properties
+**
+*Material, name=pebble
+**
+*Elastic
+1000e6, 0.3
+**
+*density
+** 50.0e3
+2500.0
+**
+*specific heat
+1.0
+**
+*boundary
+999999, ENCASTRE
+999998, ENCASTRE
+**
+*Surface Interaction, name=grips
+*Friction
+0.3
+*SURFACE BEHAVIOR, PRESSURE-OVERCLOSURE=HARD
+**
+*Surface Interaction, name=floorInt
+1.,
+*Friction
+0.,
+**
+**
+*Contact Pair, Interaction=grips, Type=surface to surface
+** ipmc-1.ElecTop_surf,pebble-1.pebbleSurf
+** ipmc-2.ElecTop_surf,pebble-1.pebbleSurf
+** ipmc-3.ElecTop_surf,pebble-1.pebbleSurf
+**
+pebble-1.pebbleSurf,ipmc-1.ElecTop_surf
+pebble-1.pebbleSurf,ipmc-2.ElecTop_surf
+pebble-1.pebbleSurf,ipmc-3.ElecTop_surf
+**
+*Contact Pair, interaction=floorInt, type=SURFACE TO SURFACE, adjust=0.0
+pebble-1.PebbleSurf, floor-1.Surf-1
+*Contact Pair, interaction=floorInt, type=SURFACE TO SURFACE
+pebble-1.PebbleSurf, floor-2.Surf-1
+************************************************************************
+**			BOUNDARY CONDITIONS
+************************************************************************
+***EQUATION
+**2
+**right,2,-1.0
+**ref_node,2,1.0
+** 2
+** right,1,-1.0
+** ref_node,1,1.0
+**
+************************************************************************
+**			INITIAL CONDITIONS
+************************************************************************
+**
+*Initial conditions, type=temperature
+ipmc-1.nall, 0.,  <omg_init>
+ipmc-2.nall, 0.,  <omg_init>
+ipmc-3.nall, 0.,  <omg_init>
+************************************************************************
+**			AMPLITUDE DEFINITION
+************************************************************************
+**
+*Amplitude, name=amp_x
+0.0, 0.0, 1.0e-3, 0.0, 5.0, 0.0, 5.001, 0.0,
+20., 0.0,      25.0, 12.5e-3, 30.0, 12.5e-3, 30.001, 12.5e-3,
+40.0, 12.5e-3, 45.0, 12.5e-3, 50.0, 12.5e-3
+**
+*Amplitude, name=amp_y
+0.0, 0.0, 1.0e-3, 0.0, 5.0, -5e-3, 5.001, -5e-3, 
+20., -5e-3,  25.0, 0.0, 30.0, -5e-3,  30.001, -5e-3,  
+40.0, -5e-3, 45.0, 0.0, 50.0, 0.0
+**
+*Amplitude, name=amp_z
+0.0, 0.0, 1.0e-3, 0.0, 5.0, -5e-3, 5.001, -5e-3, 
+20., -5e-3,  25.0, 0.0, 30.0, -5e-3,  30.001, -5e-3,  
+40.0, -5e-3, 45.0, 0.0, 50.0, 0.0
+**
+*Amplitude, name=amp_v, definition=smooth step
+0.0, 0.0, 1.0e-3, 0.5, 5.0, 0.5, 5.001, -0.5, 
+20, -0.5,  25.0, -0.5, 30.0, -0.5,  30.002, 0.5,
+40.0,0.5, 45.0,0.5, 50.0, 0.5
+**
+**
+************************************************************************
+**			STEP DEFINITION
+************************************************************************
+*Step, Name=Grip, nlgeom=yes, inc=50000
+*Coupled temperature-displacement, deltmx=10000,  stabilize=0.0002, allsdtol=0.05
+1e-12,50.0,<tmin>,0.1
+*CONTROLS, PARAMETERS=TIME INCREMENTATION
+,,,,,,,20,,,,,,
+**
+*Boundary, amplitude=amp_x
+ipmc-1.left,1,1, 1.0
+ipmc-2.left,1,1, 1.0
+ipmc-3.left,1,1, 1.0
+**
+***Boundary
+**ipmc-1.left,1,2
+**ipmc-2.left,1,2
+**
+*Boundary, amplitude=amp_y
+ipmc-1.left,2,2, 0.0
+ipmc-2.left,2,2, 0.0
+ipmc-3.left,2,2, 0.0
+**
+*Boundary, amplitude=amp_z
+ipmc-1.left,3,3, 1.0
+ipmc-2.left,3,3, 1.0
+ipmc-3.left,3,3, 1.0
+**
+*Boundary, amplitude=amp_v
+ipmc-1.bottom,11,11,1.0
+ipmc-2.bottom,11,11,1.0
+ipmc-3.bottom,11,11,1.0
+ipmc-1.top,11,11,0.0
+ipmc-2.top,11,11,0.0
+ipmc-3.top,11,11,0.0
+**
+*Dload
+pebble-1.elall, GRAV, 9.81, 0., 0., -1.0
+**
+*Boundary, amplitude=amp_x
+cap_control,1,1, 1.0
+**
+*Boundary, amplitude=amp_y
+cap_control,2,2, 0.0
+**
+*Boundary, amplitude=amp_z
+cap_control,3,3, 1.0
+**
+*Boundary
+cap_control,4,6, 0.0
+**
+**	OUTPUTS
+**
+*Output, field, frequency=1
+*node output, nset=ipmc-1.nall
+u,nt
+*node output, nset=ipmc-1.nElectrodeTop
+u
+*node output, nset=ipmc-1.nElectrodeBtm
+u
+*Element output, elset=ipmc-1.el_dummy
+le
+*Element output, elset=ipmc-1.el_ElecBtm
+le,S
+*Element output, elset=ipmc-1.el_ElecTop
+le,S
+**
+*node output, nset=ipmc-2.nall
+u,nt
+*node output, nset=ipmc-2.nElectrodeTop
+u
+*node output, nset=ipmc-2.nElectrodeBtm
+u
+*Element output, elset=ipmc-2.el_dummy
+le
+*Element output, elset=ipmc-2.el_ElecBtm
+le,S
+*Element output, elset=ipmc-2.el_ElecTop
+le,S
+**
+*node output, nset=ipmc-3.nall
+u,nt
+*node output, nset=ipmc-3.nElectrodeTop
+u
+*node output, nset=ipmc-3.nElectrodeBtm
+u
+*Element output, elset=ipmc-3.el_dummy
+le
+*Element output, elset=ipmc-3.el_ElecBtm
+le,S
+*Element output, elset=ipmc-3.el_ElecTop
+le,S
+**
+*node output, nset=pebble-1.nall
+u
+*Element output, elset=pebble-1.elall
+le, S
+**
+*node output, nset=cap-1.nall
+u
+*Element output, elset=cap-1.elall
+le, S
+**
+*Output, history
+*Node output, nset=ipmc-1.n02
+u1, u2, rf2
+***Node output, nset=ref_node
+**rf2
+*node output, nset=ipmc-1.n4
+nt11
+**
+*Node output, nset=ipmc-2.n02
+u1, u2, rf2
+***Node output, nset=ref_node
+**rf2
+*node output, nset=ipmc-2.n1
+nt11
+**
+*Node output, nset=ipmc-3.n02
+u1, u2, rf2
+***Node output, nset=ref_node
+**rf2
+*node output, nset=ipmc-3.n1
+nt11
+*End Step
+************************************************************************
