@@ -1,0 +1,231 @@
+**************************************************************************
+**INPUT DECK FOR LITHIUM SWELLING
+**
+***************************************************************************
+*HEADING
+SWELL
+************************************************************************-
+**
+**	UNITS:	Length - microns = 1e-6 meters
+**		Mass - kg
+**		Time - sec
+**		Angle - radians
+**		Temperature - Kelvin 
+**		Amount of substance - 1e-12 mol
+****************
+**		Force - 1.e-6 N
+**		Stress - 1.e6 Pa = 1 MPa 
+**		Energy - 1e-12 J
+**		Chemical Potential - J/mol
+**		Diffusivity - 1e-12 m^2/s
+**		Concentration - 1e6 mol/m^3
+**              flux          - mol/(m^2 s)
+**
+************************************************************************
+**			PARAMETERS 
+************************************************************************
+*Parameter
+**
+**
+tload = 100.
+**
+Omega = 13.0e-6
+cDot = 3.0e5/tload
+**
+**
+**For aniso
+**
+alpha1 = 0.
+alpha2 = 1.
+alpha3 = 0.
+**
+**For iso
+**
+**alpha1 = 0.5
+**alpha2 = 0.5
+**alpha3 = 0.
+**
+********************************************************************
+**			MODEL DEFINITION
+********************************************************************
+**
+********************************************************************
+**
+** Lithium interphase
+**
+*NODE
+501,0.00,0.0
+541,50.,0.0
+1001, 0.00 ,2.0
+1041, 50.0 ,2.0
+**
+*NSET,NSET=li1
+501
+*NSET,NSET=li2
+541
+*NSET,NSET=li3
+1001
+*NSET,NSET=li4
+1041
+**
+*NFILL,BIAS=1.,NSET=Nset_li_bot
+li1,li2,40,1
+**
+*NFILL,BIAS=1.,NSET=Nset_li_top
+li3,li4,40,1
+**
+*NFILL,BIAS=1.,NSET=li_nall
+Nset_li_bot,Nset_li_top,10,50
+**
+*NSET,NSET=Nset_Li_left, generate
+501,1001,50
+*NSET,NSET=Nset_Li_right, generate
+541,1041,50
+*Nset, Nset=Lithium_top_nsurface
+Nset_Li_right,Nset_Li_left, Nset_li_top
+**
+** Define the top surface of the interphase layer
+** for contact interactions
+**
+*Surface, type=Node, name =Lithium_top_nsurface
+Lithium_top_nsurface
+**
+******************************************************
+** Define the interphase elements  
+**
+*Element, type=CPE4H
+401,501,502,552,551
+*ELGEN,ELSET=li_elall
+401,40,1,1,10,50,40
+**
+**
+*Elset, elset=Lithium_top_surface,generate
+761,  800,    1
+*Elset, elset=Lithium_right_surface,generate
+40,  800,    40
+**
+** Define the top surface of the interphase layer
+** for contact interactions
+**
+*Surface, type=Element, name = Lithium_top_surface
+Lithium_top_surface,S3
+******************************************************************
+************************************************************************
+**			MATERIAL DEFINITION
+************************************************************************
+**
+** Material properties for the Interphase Li which can grow
+**
+**
+*Solid section, elset=li_elall, material= Li
+***
+**      Eyoung  = props(1)  ! Elastic modulus
+**      poisson = props(2)  ! Poisson ratio
+**      Apre    = props(3)  ! Preexponential factor    
+**      Qact    = props(4)  ! Activation energy      
+**      T0      = props(5)  ! Temperature
+**      mRate   = props(6)  ! Rate sensitivity
+**      Y0      = props(7)  ! Initial resistance in tension
+**      H0      = props(8)  ! Hardening modulus  in tension
+**      Ysat    = props(9)  ! Saturation resistance in tension
+**      ahard   = props(10)  ! Exponent in hardening relation 
+**      nhard   = props(11)  ! Exponent in hardening relation      
+**      Omega   = props(12)  ! Molar volume of Li
+**      alpha1  = props(13) ! Growth factor
+**      alpha2  = props(14) ! Growth factor
+**      alpha3  = props(15) ! Growth factor
+**      cDot    = props(16) ! Rate of change of Li concentration
+**      
+*Material, name= Li
+*User material, Constants=16
+**Eyoung poisson   Apre    Qact  To    mRate    Y0       Ho    
+  7.81e3,   0.38,  4.254E4, 37., 298., 0.15,   1.E0,   9.E03 
+** Ysat   ahard nhard  
+  2.0E0,   2.0, 0.05, <Omega>, <alpha1>,<alpha2>,<alpha3>,<cDot>
+**
+*Depvar
+27
+10,nuP
+12,Y
+14,ebarp
+15,conc
+**
+**			INITIAL CONDITIONS
+************************************************************************
+**
+************************************************************************
+**			AMPLITUDE DEFINITION
+************************************************************************
+**
+*Amplitude, name=amp_new
+0.,0.,2.,1.,1000.,1.
+**
+************************************************************************
+*Step, Name=Intial, nlgeom=yes, inc=10000
+*Static
+0.001,0.001,1.e-6,1.
+*CONTROLS, PARAMETERS=LINE SEARCH
+10,1.0,0.0001,0.25,0.10
+*CONTROLS, PARAMETERS=TIME INCREMENTATION
+,,,,,,,20,,,,,,
+**
+**	DISPLACEMENT B.C.
+**
+*Boundary
+Nset_Li_bot,2,2
+Nset_Li_left,1,1
+**501,2,2
+**501,6,6
+**
+*Dsload
+Lithium_top_surface,P,5.e-4
+**Nset_Li_top,2,2,1.e-5
+**Nset_Li_right,1,1,1.e-5
+*********************************************************
+*** OUTPUTS
+*********************************************************
+*Output, field, frequency=1
+*node output, nset=li_nall
+u
+*element output, elset=li_elall
+s,le, sdv
+***
+*Output, history, frequency=1
+**
+**
+**
+*End Step
+*****************************************************************
+*Step, Name=Grow, nlgeom=yes, inc=10000
+*Static
+0.001,<tload>,1.e-6,1.
+*CONTROLS, PARAMETERS=LINE SEARCH
+10,1.0,0.0001,0.25,0.10
+*CONTROLS, PARAMETERS=TIME INCREMENTATION
+,,,,,,,20,,,,,,
+**
+**	DISPLACEMENT B.C.
+**
+*Boundary,op=new
+Nset_Li_bot,2,2
+Nset_Li_left,1,1
+**501,2,2
+**501,6,6
+**
+*Dsload,op=new
+Lithium_top_surface,P,0.
+*******************************************************
+*** OUTPUTS
+*********************************************************
+*Output, field, frequency=1
+*node output, nset=li_nall
+u
+*element output, elset=li_elall
+s,le, sdv
+***
+*Output, history, frequency=1
+**
+**
+**
+*End Step
+*****************************************************************
