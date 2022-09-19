@@ -1,0 +1,190 @@
+**************************************************************************
+**INPUT DECK FOR LITHIUM TENSION
+**
+***************************************************************************
+*HEADING
+SWELL
+************************************************************************-
+**
+** NOTE: ABAQUS has no built-in units. It is the
+** users responsibility to use compatible units.
+**
+**       UNITS USED IN THIS PROBLEM, SI:
+**                  Length               --- mm
+**                  Time                 --- s
+**                  Force                --- Newton --- N
+**                  Stress               --- Pascal --- MPa 
+**                  Temperature          --- deg K
+**                  Energy               --- Joule --- J
+************************************************************************
+**			PARAMETERS 
+************************************************************************
+*Parameter
+**
+********************************************************************
+**			MODEL DEFINITION
+********************************************************************
+**
+** Specimen
+**
+**
+** To construct the mesh, the corner nodes of the 
+** mesh are first defined. The coordinates of the
+** nodes (denoted by their node numbers) are given by
+** their horizontal and vertical positions.
+** In the *NODE option:
+** The first entry is the nodal number.
+** The second entry is the horizontal position.
+** The third entry is the vertical position.
+**
+*NODE
+1,   0.0, 0.0
+41,  6.35,0.0 
+1001, 0.00 ,15.5
+1041, 6.35,15.5
+**
+**
+*NSET,NSET=sub1
+1
+*NSET,NSET=sub2
+41
+*NSET,NSET=sub3
+1001
+*NSET,NSET=sub4
+1041
+**
+** In the *NFILL option:
+** The first entry is the name of the node set 
+** defining the first bound of the region.
+** The second entry is the name of the node set 
+** defining the second bound of the region.
+** The third entry is the number of intervals along
+** each line between bounding nodes.
+** The fourth entry is the increment in node numbers
+** from the node number at the first bound set end.
+** The nodes generated are included into the node set
+** given by the NSET parameter.
+**
+*NFILL,BIAS=1.,NSET=Nset_bot
+sub1,sub2,40,1
+**
+*NFILL,BIAS=1.,NSET=Nset_top
+sub3,sub4,40,1
+**
+*NFILL,BIAS=1.,NSET=Nall
+Nset_bot,Nset_top,20,50
+**
+*NSET,NSET=Nset_left, generate
+1,1001,50
+*NSET,NSET=Nset_right, generate
+41,1041,50
+**
+*Node
+2000,0.,16.
+*Nset,Nset=Ref
+2000
+******************************************************
+** Substrate elements  
+**
+**
+*Element, type=CAX4H
+1,1,2,52,51
+*ELGEN,ELSET=Elall
+1,40,1,1,20,50,40
+**
+** We have used a simple mesh generation option *ELGEN, and 
+** assigned all the elements in the substrate to the element 
+** set sub_elall.
+**
+** The first entry is the master element number.
+**
+** The second entry is the number of elements to be defined
+** in the first row generated, including the master element.
+**
+** The third entry is the increment in corresponding node numbers
+** from element to element in the row.
+**
+** The fourth entry is the increment in element numbers in the row.
+**
+** The fifth entry is the number of rows to be defined
+**
+** The sixth entry is the increment in node numbers of 
+** corresponding nodes from row to row.
+**
+** The seventh entry is the increment in element numbers of corresponding
+** elements from row to row.
+************************************************************************
+**			MATERIAL DEFINITION
+************************************************************************
+*Solid Section,Elset=Elall, Material=Metal
+**
+*Material, Name=Metal
+**      Eyoung  = props(1)  ! Elastic modulus
+**      poisson = props(2)  ! Poisson ratio
+**      Apre    = props(3)  ! Pre-exponential factor
+**      Qact    = props(4)  ! Activation energy in kJ/mol
+**      T0      = props(5)  ! Temperature in deg K
+**      mRate   = props(6)  ! Rate sensitivity
+**      Y0      = props(7)  ! Initial resistance in tension
+**      H0      = props(8)  ! Hardening modulus  in tension
+**      Ysat    = props(9)  ! Saturation resistance in tension
+**      ahard   = props(10) ! Exponent in hardening relation
+**      nhard   = props(11) ! Exponent in hardening relation
+**      eBarLmt = props(12) ! Limit on equiv plas tensile strain increment
+**
+*User material, Constants=12  
+**Eyoung poisson   Apre    Qact  To    mRate    Y0       Ho    
+ 7.81e3,   0.38,   4.254E4, 37., 298., 0.15,  0.95,  10.
+** Ysat      ahard nhard eBarLmt
+   2.,       2.,    0.05,  0.1
+**    
+*Depvar
+14
+10,nuP
+12,Y
+14,ebarp
+*********************************************************************
+*********************************************************************
+**                 Constraint
+*********************************************************************
+*Equation
+2
+Nset_top,2,1.0,Ref,2,-1.0
+************************************************************************
+**			AMPLITUDE DEFINITION
+************************************************************************
+************************************************************************
+*Step, Name=Pull, nlgeom=yes, inc=10000
+*Static
+0.01,500,1.e-6,10.
+*CONTROLS, PARAMETERS=LINE SEARCH
+10,1.0,0.0001,0.25,0.10
+*CONTROLS, PARAMETERS=TIME INCREMENTATION
+,,,,,,,20,,,,,,
+**
+**	DISPLACEMENT B.C.
+**
+*Boundary
+Nset_left,1
+Nset_bot,1,2
+Nset_top,1
+**
+*Boundary, type=velocity
+REF,2,2,15.5E-3
+*********************************************************
+*** OUTPUTS
+*********************************************************
+*Output, field, frequency=1
+*node output, nset=Nall
+u
+*element output, elset=Elall
+S,le,sdv
+**
+*Output, history, frequency=1
+**
+*Node Output, nset=Ref
+u2,rf2
+**
+**
+*End Step
+*****************************************************************

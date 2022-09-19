@@ -1,0 +1,113 @@
+****************************************************************
+*Heading
+3D TENSION (ONE ELEMENT)
+****************************************************************
+*Parameter
+** initial length of element (meters)
+l0 = 1.e-3
+**
+****************************************************************
+** 			MODEL DEFINITION
+****************************************************************
+*Node,nset=nall
+1,0.,0.,0.
+2,<l0>,0.,0.
+3,<l0>,<l0>,0.
+4,0.,<l0>,0.
+5,0.,0.,<l0>
+6,<l0>,0.,<l0>
+7,<l0>,<l0>,<l0>
+8,0.,<l0>,<l0>
+*Element,type=C3D8H,elset=Elall
+1,1,2,3,4,5,6,7,8
+*******************************************************************
+**  Specification Of Material Properties
+*******************************************************************
+*Solid Section,Elset=ELALL, Material=Metal
+**
+*Material, Name=Metal
+**      Eyoung  = props(1)  ! Elastic modulus
+**      poisson = props(2)  ! Poisson ratio
+**      Apre    = props(3)  ! Pre-exponential factor
+**      Qact    = props(4)  ! Activation energy in kJ/mol
+**      T0      = props(5)  ! Temperature in deg K
+**      mRate   = props(6)  ! Rate sensitivity
+**      Y0      = props(7)  ! Initial resistance in tension
+**      H0      = props(8)  ! Hardening modulus  in tension
+**      Ysat    = props(9)  ! Saturation resistance in tension
+**      ahard   = props(10) ! Exponent in hardening relation
+**      nhard   = props(11) ! Exponent in hardening relation
+**      eBarLmt = props(12) ! Limit on equiv plas tensile strain increment
+**
+*User material, Constants=12
+**Eyoung poisson   Apre    Qact  To    mRate    Y0       Ho    
+  7.81e9,   0.38,  4.254E4, 37., 298., 0.15,   0.95E6,   10.e6 
+** Ysat   ahard nhard eBarLmt
+  2.0E6,   2.0, 0.05,  0.02
+*Depvar
+14
+10,nuP
+12,Y
+14,ebarp
+*********************************************************************
+**                 BOUNDARY CONDITIONS, MODEL DATA
+*********************************************************************
+**
+*Nset,nset=BOT
+1,2,3,4
+*Nset,nset=TOP
+5,6,7,8
+*Boundary
+BOT,3
+1,1,2
+2,2
+6,2
+4,1
+8,1
+5,1,2
+*Nset,nset=TOP1
+6,7,8
+*Equation
+2
+TOP1,3,1.0,5,3,-1.0
+*Nset,nset=REF
+5
+****************************************************************
+**			AMPLITUDE DEFINITION
+****************************************************************
+*AMPLITUDE,NAME=PROFILE1
+ 0.000E+00, 0.200E-04, 0.227E+00, 0.201E-04, 0.455E+00, 0.202E-04, 0.682E+00, 0.203E-04,
+ 0.909E+00, 0.204E-04, 0.114E+01, 0.205E-04, 0.136E+01, 0.206E-04, 0.159E+01, 0.206E-04,
+ 0.182E+01, 0.207E-04, 0.205E+01, 0.208E-04, 0.227E+01, 0.209E-04, 0.250E+01, 0.210E-04,
+ 0.273E+01, 0.211E-04, 0.295E+01, 0.212E-04, 0.318E+01, 0.213E-04, 0.341E+01, 0.214E-04,
+ 0.364E+01, 0.215E-04, 0.386E+01, 0.216E-04, 0.409E+01, 0.217E-04, 0.432E+01, 0.218E-04,
+ 0.455E+01, 0.219E-04, 0.477E+01, 0.220E-04, 0.500E+01, 0.221E-04, 0.523E+01, 0.222E-04,
+ 0.545E+01, 0.223E-04, 0.568E+01, 0.224E-04, 0.591E+01, 0.225E-04, 0.614E+01, 0.226E-04,
+ 0.636E+01, 0.227E-04, 0.659E+01, 0.228E-04, 0.682E+01, 0.229E-04, 0.705E+01, 0.230E-04,
+ 0.727E+01, 0.231E-04, 0.750E+01, 0.232E-04, 0.773E+01, 0.233E-04, 0.795E+01, 0.234E-04,
+ 0.818E+01, 0.236E-04, 0.841E+01, 0.237E-04, 0.864E+01, 0.238E-04, 0.886E+01, 0.239E-04,
+ 0.909E+01, 0.240E-04, 0.932E+01, 0.241E-04, 0.955E+01, 0.242E-04, 0.977E+01, 0.243E-04,
+ 0.100E+02, 0.244E-04, 0.102E+02, 0.245E-04, 0.105E+02, 0.247E-04, 0.107E+02, 0.248E-04,
+ 0.109E+02, 0.249E-04, 0.111E+02, 0.250E-04, 0.114E+02, 0.251E-04, 0.116E+02, 0.252E-04,
+ 0.118E+02, 0.253E-04, 0.120E+02, 0.254E-04, 0.123E+02, 0.256E-04, 0.125E+02, 0.257E-04,
+** Strain rate =   2.000000000000000E-002  TOT_TIME =    12.5000000000000   
+********************************************************************
+**             		ANALYSIS STEP, STANDARD
+****************************************************************
+*STEP, Name=Loading, nlgeom=yes, inc=50000
+*static
+1,12.5,1.e-8,.1
+**
+*Boundary, type=velocity,amp=profile1
+REF,3,3,1.
+**
+*Output, field, variable=All, Number Interval=25
+*Output, history
+*Node output,NSET=REF
+rf3,u3,v3
+*Element output,Elset=Elall
+s33,le33,sdv
+*MONITOR,NODE=ref,DOF=3
+*END STEP
+**
+
