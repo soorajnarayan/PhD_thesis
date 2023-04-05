@@ -1611,7 +1611,7 @@ C----------------------------------------------------------------------
 	CALL MDET(A,DET)
 	IF ( DET .EQ. 0.D0 ) THEN
 	  write(*,10)
-	  STOP
+	  call xit
 	ENDIF
 	CALL MCOFAC(A,ACOFAC)
 	CALL MTRANS(ACOFAC,AADJ)
